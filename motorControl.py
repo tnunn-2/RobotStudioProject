@@ -42,17 +42,67 @@ class BusServo:
         self.ser.write(packet)
 
     def set_id(self, current_id, new_id):
-        """Careful: Use only when one servo is connected!"""
-        packet = bytearray([0x55, 0x55, current_id, 0x04, 13, new_id])
-        checksum = self._calculate_checksum(current_id, 4, 13, [new_id])
-        packet.append(checksum)
-        self.ser.write(packet)
-        print(f"Servo {current_id} changed to ID {new_id}")
+        """
+        Change servo ID.
+        IMPORTANT: Only one servo should be connected when running this!
+        """
 
-    def stop(self, servo_id):
-        """Unloads the servo (turns off motor torque)"""
-        packet = bytearray([0x55, 0x55, servo_id, 0x03, 20, 0, 232]) # Checksum pre-calc'd for ID 1
+        if not (0 <= new_id <= 253):
+            print("Invalid ID. Must be 0–253.")
+            return
+
+        cmd = 13  # SERVO_ID_WRITE
+        params = [new_id]
+        length = 4  # ID + Length + Cmd + 1 param
+
+        checksum = self._calculate_checksum(current_id, length, cmd, params)
+
+        packet = bytearray([0x55, 0x55, current_id, length, cmd] + params + [checksum])
+
         self.ser.write(packet)
+        time.sleep(0.1)
+
+        print(f"Servo ID changed from {current_id} → {new_id}")
+        
+    def read_id(self, servo_id):
+        """
+        Reads the ID of a servo.
+        Returns the ID if successful, None otherwise.
+        """
+
+        cmd = 14  # SERVO_ID_READ
+        params = []
+        length = 3  # ID + Length + Cmd
+
+        checksum = self._calculate_checksum(servo_id, length, cmd, params)
+
+        # Build request packet
+        packet = bytearray([0x55, 0x55, servo_id, length, cmd, checksum])
+
+        # Clear input buffer before sending
+        self.ser.reset_input_buffer()
+
+        # Send request
+        self.ser.write(packet)
+
+        # Wait briefly for response
+        time.sleep(0.1)
+
+        # Read response
+        response = self.ser.read(7)  # Expected 7 bytes
+
+        if len(response) != 7:
+            print("No valid response received.")
+            return None
+
+        if response[0] != 0x55 or response[1] != 0x55:
+            print("Invalid response header.")
+            return None
+
+        returned_id = response[5]
+
+        print(f"Servo reported ID: {returned_id}")
+        return returned_id
 
     def close(self):
         self.ser.close()
@@ -68,6 +118,7 @@ class BusServo:
             checksum = self._calculate_checksum(servo_id, length, cmd, params)
             
             packet = bytearray([0x55, 0x55, servo_id, length, cmd] + params + [checksum])
+            print(packet)
             self.ser.write(packet)
             print(f"Servo {servo_id} torque DISABLED.")
 
@@ -85,13 +136,38 @@ class BusServo:
         self.ser.write(packet)
         print(f"Servo {servo_id} torque ENABLED.")
 
+    def emergency_shutdown(self, servo_id):
+        print("EMERGENCY STOP ACTIVATED")
+        try:
+            self.torque_off(servo_id)
+        except:
+            pass
+
+    def is_alive(self, servo_id):
+        try:
+            pos = self.read_position(servo_id)
+            return pos is not None
+        except:
+            return False
+
+    def monitorDisconnection(self, servo_id, timeout=0.5):
+        while True:
+            alive = self.is_alive(servo_id)
+            if not alive:
+                print("Servo disconnected")
+                self.emergency_shutdown(self, servo_id)
+                break
+            time.sleep(timeout)
+
 # --- Example Usage ---
 if __name__ == "__main__":
     my_robot = BusServo(port='COM9') # Replace with your COM port
+
+    my_robot.read_id(2)
     
     # Smooth move: ID 1 to position 500 (middle) over 1 second
-    my_robot.move(1, 500, 1000)
-    time.sleep(1.5)
+    # my_robot.move(1, 500, 1000)
+    # time.sleep(1.5)
     
     # Fast move: ID 1 to position 200 over 0.2 seconds
     # my_robot.move(1, 200, 200)

@@ -1,0 +1,8 @@
+# Serial communication for Hiwonder Bus Servos
+pyserial>=3.5
+
+# Optional: Useful for high-precision timing/math in robotics
+numpy>=1.24.0
+
+# Optional: If you plan to add a GUI or dashboard later
+# tkinter (usually built-in)

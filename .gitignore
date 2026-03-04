@@ -1,0 +1,16 @@
+# Python virtual environment
+venv/
+__pycache__/
+*.py[cod]
+*$py.class
+
+# IDE Folders (Cursor/VS Code)
+.vscode/
+.cursor/
+
+# OS specific files
+.DS_Store
+Thumbs.db
+
+# Large log files from robot debugging
+*.log

@@ -1,66 +1,106 @@
-import serial
 import time
 from motorControl import BusServo
 from motorInfo import ServoMonitor
-import threading
 
-def stepRight(my_robot):
-    my_robot.move(2, 300, 1000)
-    time.sleep(1.5)
-    my_robot.move(2, 500, 1000)
-    time.sleep(1.5)
-    my_robot.move(2, 700, 1000)
-    time.sleep(1.5)
-    my_robot.move(2, 500, 1000)
-    time.sleep(1.5)
-    my_robot.move(2, 300, 1000)
-    time.sleep(1.5)
-    my_robot.move(2, 500, 1000)
-    time.sleep(1.5)
+HOME_POSITIONS = {
+    1: 982,
+    2: 546,
+    3: 739,
+    4: 430
+}
 
+def homePosition(my_robot, connected_ids, duration=1000):
+    print("Moving connected servos to home positions...")
 
-def stepHip(my_robot):
-    my_robot.move(1, 300, 1000)
-    time.sleep(1.5)
-    my_robot.move(1, 500, 1000)
-    time.sleep(1.5)
-    my_robot.move(1, 700, 1000)
-    time.sleep(1.5)
-    my_robot.move(1, 500, 1000)
-    time.sleep(1.5)
-    my_robot.move(1, 300, 1000)
-    time.sleep(1.5)
-    my_robot.move(1, 500, 1000)
-    time.sleep(1.5)
+    for servo_id in connected_ids:
+        if servo_id in HOME_POSITIONS:
+            my_robot.move(servo_id, HOME_POSITIONS[servo_id], duration)
+            time.sleep(0.1)
 
-def homePosition(my_robot):
-    my_robot.move(1, 500, 1000)
-    time.sleep(1.5)
-    my_robot.move(2, 500, 1000)
-    time.sleep(1.5)
+    time.sleep(duration / 1000 + 0.5)
+    print("Home position reached.")
+
+def bootUp(my_robot):
+    print("Booting up robot...")
+
+    connected_ids = []
+    monitor = ServoMonitor(ser=my_robot.ser)
+
+    try:
+        print("\nScanning for connected servos (IDs 1-4)...")
+        for servo_id in range(1, 5):
+            returned_id = my_robot.read_id(servo_id)
+            if returned_id is not None:
+                connected_ids.append(servo_id)
+
+        if not connected_ids:
+            print("No servos detected.")
+            return []
+
+        print(f"\nConnected servos: {connected_ids}")
+
+        print("\nReading servo info...")
+        monitor.get_stats(connected_ids)
+
+        print("\nEnabling torque on connected servos...")
+        for servo_id in connected_ids:
+            my_robot.torque_on(servo_id)
+            time.sleep(0.05)
+
+        print("\nMoving to home position...")
+        homePosition(my_robot, connected_ids)
+
+        print("\nBoot-up complete.")
+        return connected_ids
+
+    except Exception as e:
+        print(f"Boot-up error: {e}")
+        return []
+
+def shutdown(my_robot):
+    print("Shutting down robot...")
+
+    connected_ids = []
+    monitor = ServoMonitor(ser=my_robot.ser)
+
+    try:
+        print("\nScanning for connected servos (IDs 1-4)...")
+        for servo_id in range(1, 5):
+            returned_id = my_robot.read_id(servo_id)
+            if returned_id is not None:
+                connected_ids.append(servo_id)
+
+        if not connected_ids:
+            print("No servos detected. Nothing to shut down.")
+            return []
+
+        print(f"\nConnected servos: {connected_ids}")
+
+        print("\nReading servo info before shutdown...")
+        monitor.get_stats(connected_ids)
+
+        print("\nDisabling torque on connected servos...")
+        for servo_id in connected_ids:
+            my_robot.torque_off(servo_id)
+            time.sleep(0.05)
+
+        print("\nShutdown complete.")
+        return connected_ids
+
+    except Exception as e:
+        print(f"Shutdown error: {e}")
+        return []
 
 if __name__ == "__main__":
-    my_robot = BusServo(port='COM9') # Replace with your COM port
+    PORT = 'COM9'
 
-    monitor_thread = threading.Thread(
-        target=my_robot.monitorDisconnection,
-        args=(my_robot, 1),
-        daemon=True
-    )
-    monitor_thread.start()
+    my_robot = BusServo(port=PORT)
 
-    # my_robot.read_id(1)
-    # my_robot.torque_off(1)
-    # Smooth move: ID 1 to position 500 (middle) over 1 second
-    # my_robot.move(2, 500, 1000)
-    # time.sleep(1.5)
-    stepRight(my_robot)
-    stepHip(my_robot)
-    homePosition(my_robot)
+    connected = bootUp(my_robot)
 
+    # Example actions here
+    # stepRight(my_robot)
+    # stepHip(my_robot)
 
-
-    # Fast move: ID 1 to position 200 over 0.2 seconds
-    # my_robot.move(1, 200, 200)
-    
+    shutdown(my_robot)
     my_robot.close()

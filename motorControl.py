@@ -163,7 +163,9 @@ class BusServo:
 if __name__ == "__main__":
     my_robot = BusServo(port='COM9') # Replace with your COM port
 
-    my_robot.read_id(2)
+    my_robot.read_id(1)
+    my_robot.set_id(1, 4)
+    my_robot.read_id(4)
     
     # Smooth move: ID 1 to position 500 (middle) over 1 second
     # my_robot.move(1, 500, 1000)

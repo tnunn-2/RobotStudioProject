@@ -28,16 +28,18 @@ SHIN_LENGTH_CM = 16
 # Gait tuning constants
 # -------------------------
 # You may need to flip signs depending on your robot's actual mounting direction.
-LEFT_HIP_FORWARD_DELTA = -120
+LEFT_HIP_FORWARD_DELTA = 120
 RIGHT_HIP_FORWARD_DELTA = 120
-LEFT_HIP_BACK_DELTA = 60
+
+LEFT_HIP_BACK_DELTA = -60
 RIGHT_HIP_BACK_DELTA = -60
 
-LEFT_KNEE_LIFT_DELTA = -110
+LEFT_KNEE_LIFT_DELTA = 110
 RIGHT_KNEE_LIFT_DELTA = 110
 
-STEP_DURATION_MS = 450
-SAMPLE_DT = 0.05
+STEP_DURATION_MS = 220
+SAMPLE_DT = 0.02
+COMMAND_STAGGER = 0.005
 
 def clamp_position(pos):
     return max(0, min(1000, int(pos)))
@@ -48,15 +50,14 @@ def servo_units_to_deg(pos_units, servo_id=None):
 def relative_deg_from_home(pos_units, servo_id):
     return (pos_units - HOME_POSITIONS[servo_id]) * DEG_PER_UNIT
 
-def homePosition(my_robot, connected_ids, duration=1000):
+def homePosition(my_robot, connected_ids, duration=500):
     print("Moving connected servos to home positions...")
 
     for servo_id in connected_ids:
         if servo_id in HOME_POSITIONS:
             my_robot.move(servo_id, HOME_POSITIONS[servo_id], duration)
-            time.sleep(0.1)
 
-    time.sleep(duration / 1000 + 0.5)
+    time.sleep(duration / 1000 + 0.08)
     print("Home position reached.")
 
 def bootUp(my_robot):
@@ -171,13 +172,12 @@ def sample_log(monitor, servo_ids, log, t0):
             log[sid]["angle_deg_abs"].append(servo_units_to_deg(pos, sid))
             log[sid]["angle_deg_rel_home"].append(relative_deg_from_home(pos, sid))
 
-def move_pose_and_log(my_robot, monitor, pose_dict, servo_ids, log, t0, duration_ms=450, sample_dt=0.05):
+def move_pose_and_log(my_robot, monitor, pose_dict, servo_ids, log, t0, duration_ms=220, sample_dt=0.02):
     for sid, target in pose_dict.items():
         if sid in servo_ids:
             my_robot.move(sid, clamp_position(target), duration_ms)
-            time.sleep(0.03)
 
-    end_time = time.time() + duration_ms / 1000.0 + 0.15
+    end_time = time.time() + duration_ms / 1000.0 + 0.03
     while time.time() < end_time:
         sample_log(monitor, servo_ids, log, t0)
         time.sleep(sample_dt)
@@ -293,19 +293,34 @@ def walking(my_robot, num_steps=4, duration_ms=STEP_DURATION_MS, sample_dt=SAMPL
     print("Enabling torque...")
     for sid in required_ids:
         my_robot.torque_on(sid)
-        time.sleep(0.05)
+        time.sleep(0.01)
 
     print("Moving to home position before walking...")
-    homePosition(my_robot, required_ids, duration=800)
+    homePosition(my_robot, required_ids, duration=400)
 
     log = initialize_log(required_ids)
     t0 = time.time()
 
-    # capture initial standing pose
-    for _ in range(5):
+    for _ in range(3):
         sample_log(monitor, required_ids, log, t0)
         time.sleep(sample_dt)
 
+    # Neutral/load-transfer poses
+    shift_left_pose = build_pose(
+        left_hip_delta=-20,
+        left_knee_delta=20,
+        right_hip_delta=-20,
+        right_knee_delta=0
+    )
+
+    shift_right_pose = build_pose(
+        left_hip_delta=-20,
+        left_knee_delta=0,
+        right_hip_delta=-20,
+        right_knee_delta=20
+    )
+
+    # Left leg swings forward, right supports
     left_swing_pose = build_pose(
         left_hip_delta=LEFT_HIP_FORWARD_DELTA,
         left_knee_delta=LEFT_KNEE_LIFT_DELTA,
@@ -313,6 +328,7 @@ def walking(my_robot, num_steps=4, duration_ms=STEP_DURATION_MS, sample_dt=SAMPL
         right_knee_delta=0
     )
 
+    # Right leg swings forward, left supports
     right_swing_pose = build_pose(
         left_hip_delta=LEFT_HIP_BACK_DELTA,
         left_knee_delta=0,
@@ -320,25 +336,56 @@ def walking(my_robot, num_steps=4, duration_ms=STEP_DURATION_MS, sample_dt=SAMPL
         right_knee_delta=RIGHT_KNEE_LIFT_DELTA
     )
 
-    home_pose = build_pose()
+    settle_pose = build_pose(
+        left_hip_delta=0,
+        left_knee_delta=0,
+        right_hip_delta=0,
+        right_knee_delta=0
+    )
 
     for step_idx in range(num_steps):
-        print(f"Walking step {step_idx + 1}/{num_steps}: left leg swing")
-        move_pose_and_log(my_robot, monitor, left_swing_pose, required_ids, log, t0, duration_ms, sample_dt)
+        print(f"Walking cycle {step_idx + 1}/{num_steps}")
 
-        print(f"Walking step {step_idx + 1}/{num_steps}: return through home")
-        move_pose_and_log(my_robot, monitor, home_pose, required_ids, log, t0, duration_ms, sample_dt)
+        # shift/load right leg so left can swing
+        move_pose_and_log(
+            my_robot, monitor, shift_left_pose, required_ids, log, t0,
+            duration_ms=140, sample_dt=sample_dt
+        )
 
-        print(f"Walking step {step_idx + 1}/{num_steps}: right leg swing")
-        move_pose_and_log(my_robot, monitor, right_swing_pose, required_ids, log, t0, duration_ms, sample_dt)
+        # left swing
+        move_pose_and_log(
+            my_robot, monitor, left_swing_pose, required_ids, log, t0,
+            duration_ms=duration_ms, sample_dt=sample_dt
+        )
 
-        print(f"Walking step {step_idx + 1}/{num_steps}: return through home")
-        move_pose_and_log(my_robot, monitor, home_pose, required_ids, log, t0, duration_ms, sample_dt)
+        # brief settle
+        move_pose_and_log(
+            my_robot, monitor, settle_pose, required_ids, log, t0,
+            duration_ms=120, sample_dt=sample_dt
+        )
+
+        # shift/load left leg so right can swing
+        move_pose_and_log(
+            my_robot, monitor, shift_right_pose, required_ids, log, t0,
+            duration_ms=140, sample_dt=sample_dt
+        )
+
+        # right swing
+        move_pose_and_log(
+            my_robot, monitor, right_swing_pose, required_ids, log, t0,
+            duration_ms=duration_ms, sample_dt=sample_dt
+        )
+
+        # brief settle
+        move_pose_and_log(
+            my_robot, monitor, settle_pose, required_ids, log, t0,
+            duration_ms=120, sample_dt=sample_dt
+        )
 
     print("Walking routine complete. Returning to home position...")
-    homePosition(my_robot, required_ids, duration=800)
+    homePosition(my_robot, required_ids, duration=350)
 
-    for _ in range(5):
+    for _ in range(3):
         sample_log(monitor, required_ids, log, t0)
         time.sleep(sample_dt)
 

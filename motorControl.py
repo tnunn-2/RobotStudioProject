@@ -1,8 +1,13 @@
 import serial
 import time
 
+PORT = '/dev/ttyUSB0'
+# PORT = 'COM9'
+
+BAUDRATE = 115200
+
 class BusServo:
-    def __init__(self, port='COM3', baudrate=115200):
+    def __init__(self, port=PORT, baudrate=BAUDRATE):
         try:
             self.ser = serial.Serial(port, baudrate, timeout=1)
             print(f"Connected to {port} at {baudrate} baud.")
@@ -31,14 +36,14 @@ class BusServo:
         time_h = (duration >> 8) & 0xFF
 
         params = [pos_l, pos_h, time_l, time_h]
-        cmd = 1 # SERVO_MOVE_TIME_WRITE
-        length = 7 # ID + Length + Command + 4 params
-        
+        cmd = 1  # SERVO_MOVE_TIME_WRITE
+        length = 7  # ID + Length + Command + 4 params
+
         checksum = self._calculate_checksum(servo_id, length, cmd, params)
-        
+
         # Build packet: Header(2) + ID + Length + Cmd + Params + Checksum
         packet = bytearray([0x55, 0x55, servo_id, length, cmd] + params + [checksum])
-        
+
         self.ser.write(packet)
 
     def set_id(self, current_id, new_id):
@@ -46,7 +51,6 @@ class BusServo:
         Change servo ID.
         IMPORTANT: Only one servo should be connected when running this!
         """
-
         if not (0 <= new_id <= 253):
             print("Invalid ID. Must be 0–253.")
             return
@@ -63,13 +67,12 @@ class BusServo:
         time.sleep(0.1)
 
         print(f"Servo ID changed from {current_id} → {new_id}")
-        
+
     def read_id(self, servo_id):
         """
         Reads the ID of a servo.
         Returns the ID if successful, None otherwise.
         """
-
         cmd = 14  # SERVO_ID_READ
         params = []
         length = 3  # ID + Length + Cmd
@@ -108,30 +111,30 @@ class BusServo:
         self.ser.close()
 
     def torque_off(self, servo_id):
-            """
-            Turns off the motor torque. You can move the servo by hand.
-            Command: 20 (SERVO_LOAD_OR_UNLOAD_WRITE), Parameter: 0 (Unload)
-            """
-            params = [0] # 0 = Unload
-            cmd = 20
-            length = 4
-            checksum = self._calculate_checksum(servo_id, length, cmd, params)
-            
-            packet = bytearray([0x55, 0x55, servo_id, length, cmd] + params + [checksum])
-            print(packet)
-            self.ser.write(packet)
-            print(f"Servo {servo_id} torque DISABLED.")
+        """
+        Turns off the motor torque. You can move the servo by hand.
+        Command: 20 (SERVO_LOAD_OR_UNLOAD_WRITE), Parameter: 0 (Unload)
+        """
+        params = [0]  # 0 = Unload
+        cmd = 20
+        length = 4
+        checksum = self._calculate_checksum(servo_id, length, cmd, params)
+
+        packet = bytearray([0x55, 0x55, servo_id, length, cmd] + params + [checksum])
+        print(packet)
+        self.ser.write(packet)
+        print(f"Servo {servo_id} torque DISABLED.")
 
     def torque_on(self, servo_id):
         """
         Locks the motor torque. The servo will hold its current position.
         Command: 20, Parameter: 1 (Load)
         """
-        params = [1] # 1 = Load
+        params = [1]  # 1 = Load
         cmd = 20
         length = 4
         checksum = self._calculate_checksum(servo_id, length, cmd, params)
-        
+
         packet = bytearray([0x55, 0x55, servo_id, length, cmd] + params + [checksum])
         self.ser.write(packet)
         print(f"Servo {servo_id} torque ENABLED.")
@@ -161,17 +164,17 @@ class BusServo:
 
 # --- Example Usage ---
 if __name__ == "__main__":
-    my_robot = BusServo(port='COM9') # Replace with your COM port
+    my_robot = BusServo()
 
     my_robot.read_id(1)
     my_robot.set_id(1, 4)
     my_robot.read_id(4)
-    
+
     # Smooth move: ID 1 to position 500 (middle) over 1 second
     # my_robot.move(1, 500, 1000)
     # time.sleep(1.5)
-    
+
     # Fast move: ID 1 to position 200 over 0.2 seconds
     # my_robot.move(1, 200, 200)
-    
+
     my_robot.close()

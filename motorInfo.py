@@ -1,8 +1,13 @@
 import serial
 import time
 
+PORT = '/dev/ttyUSB0'
+# PORT = 'COM9'
+
+BAUDRATE = 115200
+
 class ServoMonitor:
-    def __init__(self, ser=None, port='COM3', baudrate=115200):
+    def __init__(self, ser=None, port=PORT, baudrate=BAUDRATE):
         if ser is not None:
             self.ser = ser
             self.owns_serial = False
@@ -92,7 +97,7 @@ class ServoMonitor:
 
 
 if __name__ == "__main__":
-    monitor = ServoMonitor(port='COM9')
+    monitor = ServoMonitor()
     print("--- Starting Servo Health Monitor ---")
 
     try:

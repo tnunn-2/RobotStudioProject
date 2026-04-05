@@ -2,6 +2,9 @@ import time
 from motorControl import BusServo
 from motorInfo import ServoMonitor
 
+PORT = '/dev/ttyUSB0'
+# PORT = 'COM9'
+
 HOME_POSITIONS = {
     1: 982,
     2: 546,
@@ -92,15 +95,17 @@ def shutdown(my_robot):
         return []
 
 if __name__ == "__main__":
-    PORT = 'COM9'
-
     my_robot = BusServo(port=PORT)
 
     connected = bootUp(my_robot)
 
     # Example actions here
-    # stepRight(my_robot)
-    # stepHip(my_robot)
+    # if connected:
+    #     stepRight(my_robot)
+    #     stepHip(my_robot)
+    # else:
+    #     print("No servos connected. Cannot perform actions.")
 
-    shutdown(my_robot)
+
+    # shutdown(my_robot)
     my_robot.close()

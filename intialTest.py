@@ -1,3 +1,4 @@
+import sys
 import time
 from motorControl import BusServo
 from motorInfo import ServoMonitor
@@ -97,15 +98,34 @@ def shutdown(my_robot):
 if __name__ == "__main__":
     my_robot = BusServo(port=PORT)
 
-    connected = bootUp(my_robot)
+    try:
+        command = sys.argv[1].lower() if len(sys.argv) > 1 else "full"
 
-    # Example actions here
-    # if connected:
-    #     stepRight(my_robot)
-    #     stepHip(my_robot)
-    # else:
-    #     print("No servos connected. Cannot perform actions.")
+        if command == "bootup":
+            bootUp(my_robot)
 
+        elif command == "shutdown":
+            shutdown(my_robot)
 
-    # shutdown(my_robot)
-    my_robot.close()
+        elif command == "home":
+            connected = []
+            for servo_id in range(1, 5):
+                returned_id = my_robot.read_id(servo_id)
+                if returned_id is not None:
+                    connected.append(servo_id)
+
+            if connected:
+                homePosition(my_robot, connected)
+            else:
+                print("No servos detected.")
+
+        elif command == "full":
+            bootUp(my_robot)
+            shutdown(my_robot)
+
+        else:
+            print("Unknown command.")
+            print("Usage: python3 intialTest.py [bootup|shutdown|home|full]")
+
+    finally:
+        my_robot.close()

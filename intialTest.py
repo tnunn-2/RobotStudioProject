@@ -50,15 +50,17 @@ def servo_units_to_deg(pos_units, servo_id=None):
 def relative_deg_from_home(pos_units, servo_id):
     return (pos_units - HOME_POSITIONS[servo_id]) * DEG_PER_UNIT
 
-def homePosition(my_robot, connected_ids, duration=500):
+def homePosition(my_robot, connected_ids, duration=1000):
     print("Moving connected servos to home positions...")
 
     for servo_id in connected_ids:
         if servo_id in HOME_POSITIONS:
             my_robot.move(servo_id, HOME_POSITIONS[servo_id], duration)
+            time.sleep(0.1)
 
-    time.sleep(duration / 1000 + 0.08)
+    time.sleep(duration / 1000 + 0.5)
     print("Home position reached.")
+
 
 def bootUp(my_robot):
     print("Booting up robot...")

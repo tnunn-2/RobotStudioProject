@@ -25,7 +25,7 @@ class ServoMonitor:
         self.ser.reset_input_buffer()
         self.ser.write(bytearray(packet))
 
-    def _read_response(self, expected_cmd, expected_len):
+    def _read_response(self, expected_cmd, expected_len=None):
         data = self.ser.read(10)
         if len(data) < 6:
             return None
@@ -40,28 +40,70 @@ class ServoMonitor:
                     return list(params)
         return None
 
+    def _set_torque(self, servo_id, enable):
+        """
+        LX-16A style:
+        cmd 31, param 0 = torque off / unload
+        cmd 31, param 1 = torque on  / load
+        """
+        value = 1 if enable else 0
+        self._send_request(servo_id, 31, length=4, params=[value])
+        time.sleep(0.03)
+
+    def torque_off(self, servo_id):
+        self._set_torque(servo_id, False)
+
+    def torque_on(self, servo_id):
+        self._set_torque(servo_id, True)
+
+    def _read_torque_state(self, servo_id):
+        """
+        Attempts to read current load/unload state.
+        Returns:
+            1 -> torque on
+            0 -> torque off
+            None -> unknown / no response
+        """
+        self._send_request(servo_id, 32)
+        data = self._read_response(32)
+        if data and len(data) >= 1:
+            return data[0]
+        return None
+
     def _get_single_servo_stats(self, servo_id):
         stats = {"ID": servo_id}
 
         self._send_request(servo_id, 28)
-        pos_data = self._read_response(28, 5)
+        pos_data = self._read_response(28)
         if pos_data and len(pos_data) >= 2:
             stats["Position"] = pos_data[0] + (pos_data[1] << 8)
 
         self._send_request(servo_id, 26)
-        temp_data = self._read_response(26, 4)
+        temp_data = self._read_response(26)
         if temp_data and len(temp_data) >= 1:
             stats["Temperature"] = f"{temp_data[0]}°C"
 
         self._send_request(servo_id, 27)
-        volt_data = self._read_response(27, 5)
+        volt_data = self._read_response(27)
         if volt_data and len(volt_data) >= 2:
             mv = volt_data[0] + (volt_data[1] << 8)
             stats["Voltage"] = f"{mv/1000:.2f}V"
 
+        torque_state = self._read_torque_state(servo_id)
+        if torque_state is not None:
+            stats["Torque"] = "ON" if torque_state == 1 else "OFF"
+
         return stats
 
-    def get_stats(self, servo_ids=None, print_stats=True):
+    def get_stats(self, servo_ids=None, print_stats=True, torque_off_while_reading=True, restore_torque=True):
+        """
+        For each connected servo:
+        - optionally turn torque off
+        - read and print stats
+        - optionally restore prior torque state
+
+        This makes it easier to physically move the legs and observe position values.
+        """
         if servo_ids is None:
             servo_ids = range(1, 5)
 
@@ -71,18 +113,39 @@ class ServoMonitor:
         all_stats = []
 
         for servo_id in servo_ids:
-            stats = self._get_single_servo_stats(servo_id)
+            original_torque = None
 
-            if "Position" in stats:
-                all_stats.append(stats)
+            # Check whether servo responds at all
+            original_torque = self._read_torque_state(servo_id)
+            if original_torque is None:
+                time.sleep(0.05)
+                continue
 
-                if print_stats:
-                    print(
-                        f"Servo {stats['ID']} | "
-                        f"Position: {stats.get('Position', 'Unknown')} | "
-                        f"Temp: {stats.get('Temperature', 'Unknown')} | "
-                        f"Voltage: {stats.get('Voltage', 'Unknown')}"
-                    )
+            try:
+                if torque_off_while_reading:
+                    self.torque_off(servo_id)
+                    time.sleep(0.05)
+
+                stats = self._get_single_servo_stats(servo_id)
+
+                if "Position" in stats:
+                    all_stats.append(stats)
+
+                    if print_stats:
+                        print(
+                            f"Servo {stats['ID']} | "
+                            f"Position: {stats.get('Position', 'Unknown')} | "
+                            f"Temp: {stats.get('Temperature', 'Unknown')} | "
+                            f"Voltage: {stats.get('Voltage', 'Unknown')} | "
+                            f"Torque: {stats.get('Torque', 'Unknown')}"
+                        )
+
+            finally:
+                if restore_torque and original_torque is not None:
+                    if original_torque == 1:
+                        self.torque_on(servo_id)
+                    else:
+                        self.torque_off(servo_id)
 
             time.sleep(0.05)
 
@@ -99,10 +162,17 @@ class ServoMonitor:
 if __name__ == "__main__":
     monitor = ServoMonitor()
     print("--- Starting Servo Health Monitor ---")
+    print("Torque will be turned OFF while each servo is being read so you can move it by hand.\n")
 
     try:
         while True:
-            monitor.get_stats()
+            monitor.get_stats(
+                servo_ids=range(1, 5),
+                print_stats=True,
+                torque_off_while_reading=True,
+                restore_torque=False
+            )
+            print("-" * 70)
             time.sleep(0.5)
     except KeyboardInterrupt:
         print("\nMonitoring stopped.")

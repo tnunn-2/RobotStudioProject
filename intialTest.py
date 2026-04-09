@@ -12,7 +12,7 @@ PORT = '/dev/ttyUSB0'
 
 HOME_POSITIONS = {
     1: 982,  # left hip
-    2: 546,  # left knee
+    2: 560,  # left knee
     3: 739,  # right hip
     4: 430   # right knee
 }
@@ -50,17 +50,47 @@ def servo_units_to_deg(pos_units, servo_id=None):
 def relative_deg_from_home(pos_units, servo_id):
     return (pos_units - HOME_POSITIONS[servo_id]) * DEG_PER_UNIT
 
-def homePosition(my_robot, connected_ids, duration=1000):
+def homePosition(my_robot, connected_ids, duration=1000, tolerance=15):
     print("Moving connected servos to home positions...")
 
+    monitor = ServoMonitor(ser=my_robot.ser)
+
+    # Command all connected servos to home
     for servo_id in connected_ids:
         if servo_id in HOME_POSITIONS:
             my_robot.move(servo_id, HOME_POSITIONS[servo_id], duration)
-            time.sleep(0.1)
+            time.sleep(0.05)
 
-    time.sleep(duration / 1000 + 0.5)
-    print("Home position reached.")
+    time.sleep(duration / 1000 + 0.3)
 
+    # Read back actual positions
+    positions = read_servo_positions(monitor, connected_ids)
+
+    all_reached = True
+    for servo_id in connected_ids:
+        if servo_id not in HOME_POSITIONS:
+            continue
+
+        actual = positions.get(servo_id)
+        target = HOME_POSITIONS[servo_id]
+
+        if actual is None:
+            print(f"Servo {servo_id}: could not read position.")
+            all_reached = False
+        else:
+            error = actual - target
+            print(f"Servo {servo_id}: target={target}, actual={actual}, error={error}")
+
+            if abs(error) > tolerance:
+                print(f"Servo {servo_id} did NOT reach home within tolerance ±{tolerance}.")
+                all_reached = False
+
+    if all_reached:
+        print("Home position reached.")
+    else:
+        print("Warning: one or more servos did not fully reach home.")
+
+    return all_reached
 
 def bootUp(my_robot):
     print("Booting up robot...")
@@ -90,7 +120,12 @@ def bootUp(my_robot):
             time.sleep(0.05)
 
         print("\nMoving to home position...")
-        homePosition(my_robot, connected_ids)
+        home_ok = homePosition(my_robot, connected_ids)
+
+        if not home_ok:
+            print("\nBoot-up warning: not all connected servos reached home.")
+        else:
+            print("\nAll connected servos confirmed at home.")
 
         print("\nBoot-up complete.")
         return connected_ids

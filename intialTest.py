@@ -324,6 +324,9 @@ def walking(my_robot, num_steps=4, duration_ms=STEP_DURATION_MS, sample_dt=SAMPL
         print(f"Walking requires servos 1-4. Missing: {missing}")
         return
 
+    print(f"Required IDs: {required_ids}")
+    print(f"Connected IDs: {connected_ids}")
+
     print(f"\nConnected servos: {connected_ids}")
 
     monitor = ServoMonitor(ser=my_robot.ser)

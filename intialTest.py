@@ -37,7 +37,7 @@ RIGHT_HIP_BACK_DELTA = -60
 LEFT_KNEE_LIFT_DELTA = 110
 RIGHT_KNEE_LIFT_DELTA = 110
 
-STEP_DURATION_MS = 160
+STEP_DURATION_MS = 120
 SAMPLE_DT = 0.01
 COMMAND_STAGGER = 0.005
 
@@ -335,9 +335,6 @@ def walking(my_robot, num_steps=4, duration_ms=STEP_DURATION_MS, sample_dt=SAMPL
     for sid in required_ids:
         my_robot.torque_on(sid)
         time.sleep(0.01)
-
-    print("\nReading servo info...")
-    monitor.get_stats(connected_ids)
 
     print("Moving to home position before walking...")
     homePosition(my_robot, required_ids)

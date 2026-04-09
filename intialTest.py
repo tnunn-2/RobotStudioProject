@@ -332,7 +332,7 @@ def walking(my_robot, num_steps=4, duration_ms=STEP_DURATION_MS, sample_dt=SAMPL
         time.sleep(0.01)
 
     print("Moving to home position before walking...")
-    homePosition(my_robot, required_ids, duration=400)
+    homePosition(my_robot, required_ids)
 
     log = initialize_log(required_ids)
     t0 = time.time()

@@ -324,12 +324,20 @@ def walking(my_robot, num_steps=4, duration_ms=STEP_DURATION_MS, sample_dt=SAMPL
         print(f"Walking requires servos 1-4. Missing: {missing}")
         return
 
+    print(f"\nConnected servos: {connected_ids}")
+
     monitor = ServoMonitor(ser=my_robot.ser)
+
+    print("\nReading servo info...")
+    monitor.get_stats(connected_ids)
 
     print("Enabling torque...")
     for sid in required_ids:
         my_robot.torque_on(sid)
         time.sleep(0.01)
+
+    print("\nReading servo info...")
+    monitor.get_stats(connected_ids)
 
     print("Moving to home position before walking...")
     homePosition(my_robot, required_ids)

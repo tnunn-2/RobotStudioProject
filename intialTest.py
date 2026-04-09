@@ -37,8 +37,8 @@ RIGHT_HIP_BACK_DELTA = -60
 LEFT_KNEE_LIFT_DELTA = 110
 RIGHT_KNEE_LIFT_DELTA = 110
 
-STEP_DURATION_MS = 220
-SAMPLE_DT = 0.02
+STEP_DURATION_MS = 160
+SAMPLE_DT = 0.01
 COMMAND_STAGGER = 0.005
 
 def clamp_position(pos):
@@ -119,7 +119,6 @@ def bootUp(my_robot):
             my_robot.torque_on(servo_id)
             time.sleep(0.05)
 
-        print("\nMoving to home position...")
         home_ok = homePosition(my_robot, connected_ids)
 
         if not home_ok:
@@ -214,7 +213,7 @@ def move_pose_and_log(my_robot, monitor, pose_dict, servo_ids, log, t0, duration
         if sid in servo_ids:
             my_robot.move(sid, clamp_position(target), duration_ms)
 
-    end_time = time.time() + duration_ms / 1000.0 + 0.03
+    end_time = time.time() + duration_ms / 1000.0 + 0.01
     while time.time() < end_time:
         sample_log(monitor, servo_ids, log, t0)
         time.sleep(sample_dt)
@@ -386,7 +385,7 @@ def walking(my_robot, num_steps=4, duration_ms=STEP_DURATION_MS, sample_dt=SAMPL
         # shift/load right leg so left can swing
         move_pose_and_log(
             my_robot, monitor, shift_left_pose, required_ids, log, t0,
-            duration_ms=140, sample_dt=sample_dt
+            duration_ms=90, sample_dt=sample_dt
         )
 
         # left swing
@@ -398,13 +397,13 @@ def walking(my_robot, num_steps=4, duration_ms=STEP_DURATION_MS, sample_dt=SAMPL
         # brief settle
         move_pose_and_log(
             my_robot, monitor, settle_pose, required_ids, log, t0,
-            duration_ms=120, sample_dt=sample_dt
+            duration_ms=60, sample_dt=sample_dt
         )
 
         # shift/load left leg so right can swing
         move_pose_and_log(
             my_robot, monitor, shift_right_pose, required_ids, log, t0,
-            duration_ms=140, sample_dt=sample_dt
+            duration_ms=90, sample_dt=sample_dt
         )
 
         # right swing
@@ -416,7 +415,7 @@ def walking(my_robot, num_steps=4, duration_ms=STEP_DURATION_MS, sample_dt=SAMPL
         # brief settle
         move_pose_and_log(
             my_robot, monitor, settle_pose, required_ids, log, t0,
-            duration_ms=120, sample_dt=sample_dt
+            duration_ms=60, sample_dt=sample_dt
         )
 
     print("Walking routine complete. Returning to home position...")

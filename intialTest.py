@@ -427,7 +427,7 @@ def walking(my_robot, num_steps=4, duration_ms=STEP_DURATION_MS, sample_dt=SAMPL
         )
 
     print("Walking routine complete. Returning to home position...")
-    homePosition(my_robot, required_ids, duration=350)
+    homePosition(my_robot, required_ids)
 
     for _ in range(3):
         sample_log(monitor, required_ids, log, t0)

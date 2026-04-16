@@ -57,8 +57,8 @@ def homePosition(
     my_robot,
     connected_ids,
     tolerance=TOLERANCE,
-    step_size=3,
-    step_duration=2000,
+    step_size=8,
+    step_duration=1500,
     pause_between_steps=0.25
 ):
     print("Moving connected servos to home positions in small slow increments...")
@@ -93,7 +93,7 @@ def homePosition(
                 next_pos = current - step_size
 
             print(f"Servo {servo_id}: stepping from {current} to {next_pos} over {step_duration} ms")
-            my_robot.move_time_write(servo_id, next_pos, step_duration)
+            my_robot.move(servo_id, next_pos, step_duration)
 
             time.sleep(step_duration / 1000.0 + pause_between_steps)
 
@@ -107,7 +107,7 @@ def homePosition(
 
         if current is not None and abs(current - target) > tolerance:
             print(f"Servo {servo_id}: final step from {current} to {target} over {step_duration} ms")
-            my_robot.move_time_write(servo_id, target, step_duration)
+            my_robot.move(servo_id, target, step_duration)
             time.sleep(step_duration / 1000.0 + pause_between_steps)
 
     print("\nVerifying home positions...")
@@ -170,7 +170,6 @@ def bootUp(my_robot):
         for servo_id in connected_ids:
             print(f"Servo {servo_id}: current position = {current_positions.get(servo_id)}")
 
-        # Check if all connected motors are already near home
         all_within_tolerance = True
         for servo_id in connected_ids:
             current_pos = current_positions.get(servo_id)
@@ -197,7 +196,7 @@ def bootUp(my_robot):
                     target = current_pos - NUDGE_AMOUNT
 
                 print(f"Servo {servo_id}: {current_pos} -> {target} over {1500} ms")
-                my_robot.move_time_write(servo_id, target, 1500)
+                my_robot.move(servo_id, target, 1500)
                 time.sleep(0.1)
 
             time.sleep(1500 / 1000.0 + 0.3)

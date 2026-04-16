@@ -627,7 +627,9 @@ def waddle(
         # my_robot.move(3, h3, move_duration)
         # time.sleep(move_duration / 1000.0 + pause)
 
-        
+    print(f"Motor 4 back: {m4_forward} -> {h4}")
+    my_robot.move(4, h4, move_duration)
+    time.sleep(move_duration / 1000.0 + pause)
 
     print("\nVerifying final positions...")
     positions = read_servo_positions(monitor, [1, 2, 3, 4])

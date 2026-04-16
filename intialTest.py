@@ -525,7 +525,7 @@ def waddle(
     connected_ids,
     cycles=3,
     hip_offset=50,
-    knee_offset=35,
+    knee_offset=50,
     move_duration=600,
     pause=0.15,
     tolerance=TOLERANCE

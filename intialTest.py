@@ -59,7 +59,7 @@ def homePosition(my_robot, connected_ids, duration=1000, tolerance=15):
     for servo_id in connected_ids:
         if servo_id in HOME_POSITIONS:
             my_robot.move(servo_id, HOME_POSITIONS[servo_id], duration)
-            time.sleep(0.05)
+            time.sleep(500)
 
     time.sleep(duration / 1000 + 0.3)
 

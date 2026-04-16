@@ -11,7 +11,7 @@ PORT = '/dev/ttyUSB0'
 # PORT = 'COM9'
 
 HOME_POSITIONS = {
-    1: 996,  # left hip
+    1: 500,  # left hip
     2: 571,  # left knee
     3: 765,  # right hip
     4: 434   # right knee

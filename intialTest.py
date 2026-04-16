@@ -11,10 +11,10 @@ PORT = '/dev/ttyUSB0'
 # PORT = 'COM9'
 
 HOME_POSITIONS = {
-    1: 500,  # left hip
-    2: 571,  # left knee
-    3: 765,  # right hip
-    4: 434   # right knee
+    1: 641,  # left hip
+    2: 573,  # left knee
+    3: 794,  # right hip
+    4: 430   # right knee
 }
 
 # LX-16A style assumption: ~240 deg over 1000 position units
@@ -572,7 +572,7 @@ def waddle(
     h4 = HOME_POSITIONS[4]
 
     # Change signs here if any motor moves the wrong direction
-    m1_out = h1 + hip_offset
+    m1_out = h1 - hip_offset
     m2_forward = h2 + knee_offset
     m3_out = h3 - hip_offset
     m4_forward = h4 - knee_offset

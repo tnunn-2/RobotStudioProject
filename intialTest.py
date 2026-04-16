@@ -573,7 +573,7 @@ def waddle(
 
     # Change signs here if any motor moves the wrong direction
     m1_out = h1 - hip_offset
-    m2_forward = h2 - knee_offset
+    m2_forward = h2 + knee_offset
     m3_out = h3 - hip_offset
     m4_forward = h4 - knee_offset
 

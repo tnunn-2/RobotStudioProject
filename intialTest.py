@@ -520,6 +520,129 @@ def walking(my_robot, num_steps=4, duration_ms=STEP_DURATION_MS, sample_dt=SAMPL
 
     plot_walking_results(log)
 
+import time
+
+def waddle(
+    my_robot,
+    connected_ids,
+    cycles=3,
+    hip_offset=50,
+    knee_offset=50,
+    move_duration=1200,
+    pause=0.15,
+    tolerance=TOLERANCE
+):
+    """
+    Waddle gait:
+      1 out
+      2 forward
+      1 in
+      3 out
+      4 forward
+      3 in
+      repeat
+
+    Assumptions:
+    - Motor 1 and 3 are hips
+    - Motor 2 and 4 are knees
+    - "out" for hips means +50 from home
+    - "forward" for knees means +50 from home
+
+    Change the signs below if one or more motors move the wrong direction.
+    """
+
+    required_ids = [1, 2, 3, 4]
+
+    for sid in required_ids:
+        if sid not in connected_ids:
+            print(f"Waddle aborted: required servo {sid} is not connected.")
+            return False
+
+    monitor = ServoMonitor(ser=my_robot.ser)
+
+    print("Confirming home position before waddling...")
+    at_home = homePosition(
+        my_robot,
+        connected_ids,
+        tolerance=tolerance,
+        step_size=5,
+        step_duration=1500,
+        pause_between_steps=0.2
+    )
+
+    if not at_home:
+        print("Warning: robot did not fully confirm home, but continuing cautiously.")
+
+    # Base home positions
+    h1 = HOME_POSITIONS[1]
+    h2 = HOME_POSITIONS[2]
+    h3 = HOME_POSITIONS[3]
+    h4 = HOME_POSITIONS[4]
+
+    # Direction assumptions
+    # Change + to - if a motor moves the wrong way
+    m1_out = h1 + hip_offset
+    m2_forward = h2 + knee_offset
+    m3_out = h3 + hip_offset
+    m4_forward = h4 + knee_offset
+
+    print("\nStarting waddle gait...")
+    print(f"Cycles: {cycles}")
+    print(f"Motor 1 out target: {m1_out}")
+    print(f"Motor 2 forward target: {m2_forward}")
+    print(f"Motor 3 out target: {m3_out}")
+    print(f"Motor 4 forward target: {m4_forward}")
+
+    for cycle in range(cycles):
+        print(f"\nWaddle cycle {cycle + 1}/{cycles}")
+
+        # 1 out
+        print(f"Motor 1 out: {h1} -> {m1_out}")
+        my_robot.move(1, m1_out, move_duration)
+        time.sleep(move_duration / 1000.0 + pause)
+
+        # 2 forward
+        print(f"Motor 2 forward: {h2} -> {m2_forward}")
+        my_robot.move(2, m2_forward, move_duration)
+        time.sleep(move_duration / 1000.0 + pause)
+
+        # 1 in
+        print(f"Motor 1 in: -> {h1}")
+        my_robot.move(1, h1, move_duration)
+        time.sleep(move_duration / 1000.0 + pause)
+
+        # 3 out
+        print(f"Motor 3 out: {h3} -> {m3_out}")
+        my_robot.move(3, m3_out, move_duration)
+        time.sleep(move_duration / 1000.0 + pause)
+
+        # 4 forward
+        print(f"Motor 4 forward: {h4} -> {m4_forward}")
+        my_robot.move(4, m4_forward, move_duration)
+        time.sleep(move_duration / 1000.0 + pause)
+
+        # 3 in
+        print(f"Motor 3 in: -> {h3}")
+        my_robot.move(3, h3, move_duration)
+        time.sleep(move_duration / 1000.0 + pause)
+
+    print("\nReturning knees to home at end of waddle...")
+    my_robot.move(2, h2, move_duration)
+    time.sleep(move_duration / 1000.0 + pause)
+
+    my_robot.move(4, h4, move_duration)
+    time.sleep(move_duration / 1000.0 + pause)
+
+    print("\nVerifying final positions...")
+    positions = read_servo_positions(monitor, [1, 2, 3, 4])
+    for sid in [1, 2, 3, 4]:
+        actual = positions.get(sid)
+        target = HOME_POSITIONS[sid]
+        print(f"Servo {sid}: target={target}, actual={actual}")
+
+    print("Waddle complete.")
+    return True
+
 if __name__ == "__main__":
     my_robot = BusServo(port=PORT)
 
@@ -542,6 +665,10 @@ if __name__ == "__main__":
         elif command == "walking":
             num_steps = int(sys.argv[2]) if len(sys.argv) > 2 else 4
             walking(my_robot, num_steps=num_steps)
+
+        elif command == "waddle":
+            connected = get_connected_ids(my_robot)
+            waddle(my_robot, connected, cycles=5)
 
         elif command == "full":
             bootUp(my_robot)

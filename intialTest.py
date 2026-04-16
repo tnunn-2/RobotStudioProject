@@ -641,6 +641,104 @@ def waddle(
     print("Waddle complete.")
     return True
 
+    def dance(
+    my_robot,
+    connected_ids,
+    cycles=4,
+    hip_offset=50,
+    move_duration=1000,
+    pause=0.3,
+    tolerance=TOLERANCE
+):
+    """
+    Simple slow dance:
+    - Confirm home position
+    - Move hip motors 1 and 3 from outside of home to inside of home
+    - Repeat slowly
+
+    For each hip:
+      outside = home - hip_offset
+      inside  = home + hip_offset
+    Total sweep = 2 * hip_offset
+    """
+
+    required_ids = [1, 3]
+
+    for sid in required_ids:
+        if sid not in connected_ids:
+            print(f"Dance aborted: required servo {sid} is not connected.")
+            return False
+
+    monitor = ServoMonitor(ser=my_robot.ser)
+
+    print("Confirming home position before dancing...")
+    at_home = homePosition(
+        my_robot,
+        connected_ids,
+        tolerance=tolerance,
+        step_size=5,
+        step_duration=1500,
+        pause_between_steps=0.2
+    )
+
+    if not at_home:
+        print("Warning: robot did not fully confirm home. Aborting dance.")
+        return False
+
+    h1 = HOME_POSITIONS[1]
+    h3 = HOME_POSITIONS[3]
+
+    # Change signs here if a motor moves the wrong direction
+    m1_outside = h1 - hip_offset
+    m1_inside  = h1 + hip_offset
+
+    m3_outside = h3 - hip_offset
+    m3_inside  = h3 + hip_offset
+
+    print("\nStarting slow dance...")
+    print(f"Cycles: {cycles}")
+    print(f"Motor 1: outside={m1_outside}, home={h1}, inside={m1_inside}")
+    print(f"Motor 3: outside={m3_outside}, home={h3}, inside={m3_inside}")
+
+    for cycle in range(cycles):
+        print(f"\nDance cycle {cycle + 1}/{cycles}")
+
+        # Motor 1 sweep
+        print(f"Motor 1 outside: {h1} -> {m1_outside}")
+        my_robot.move(1, m1_outside, move_duration)
+        time.sleep(move_duration / 1000.0 + pause)
+
+        print(f"Motor 1 inside: {m1_outside} -> {m1_inside}")
+        my_robot.move(1, m1_inside, move_duration)
+        time.sleep(move_duration / 1000.0 + pause)
+
+        print(f"Motor 1 home: {m1_inside} -> {h1}")
+        my_robot.move(1, h1, move_duration)
+        time.sleep(move_duration / 1000.0 + pause)
+
+        # Motor 3 sweep
+        print(f"Motor 3 outside: {h3} -> {m3_outside}")
+        my_robot.move(3, m3_outside, move_duration)
+        time.sleep(move_duration / 1000.0 + pause)
+
+        print(f"Motor 3 inside: {m3_outside} -> {m3_inside}")
+        my_robot.move(3, m3_inside, move_duration)
+        time.sleep(move_duration / 1000.0 + pause)
+
+        print(f"Motor 3 home: {m3_inside} -> {h3}")
+        my_robot.move(3, h3, move_duration)
+        time.sleep(move_duration / 1000.0 + pause)
+
+    print("\nVerifying final positions...")
+    positions = read_servo_positions(monitor, [1, 3])
+    for sid in [1, 3]:
+        actual = positions.get(sid)
+        target = HOME_POSITIONS[sid]
+        print(f"Servo {sid}: target={target}, actual={actual}")
+
+    print("Dance complete.")
+    return True
+
 if __name__ == "__main__":
     my_robot = BusServo(port=PORT)
 
@@ -666,7 +764,19 @@ if __name__ == "__main__":
 
         elif command == "waddle":
             connected = get_connected_ids(my_robot)
-            waddle(my_robot, connected, cycles=10)
+            if connected:
+                cycles = int(sys.argv[2]) if len(sys.argv) > 2 else 10
+                waddle(my_robot, connected, cycles=cycles)
+            else:
+                print("No servos detected.")
+
+        elif command == "dance":
+            connected = get_connected_ids(my_robot)
+            if connected:
+                cycles = int(sys.argv[2]) if len(sys.argv) > 2 else 4
+                dance(my_robot, connected, cycles=cycles)
+            else:
+                print("No servos detected.")
 
         elif command == "full":
             bootUp(my_robot)
@@ -674,7 +784,7 @@ if __name__ == "__main__":
 
         else:
             print("Unknown command.")
-            print("Usage: python3 intialTest.py [bootup|shutdown|home|walking|full] [optional_step_count]")
+            print("Usage: python3 intialTest.py [bootup|shutdown|home|walking|waddle|dance|full] [optional_step_or_cycle_count]")
 
     finally:
         my_robot.close()

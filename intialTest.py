@@ -520,8 +520,6 @@ def walking(my_robot, num_steps=4, duration_ms=STEP_DURATION_MS, sample_dt=SAMPL
 
     plot_walking_results(log)
 
-import time
-
 def waddle(
     my_robot,
     connected_ids,
@@ -533,22 +531,16 @@ def waddle(
     tolerance=TOLERANCE
 ):
     """
-    Waddle gait:
+    Waddle gait full cycle:
       1 out
       2 forward
       1 in
+      2 back
       3 out
       4 forward
       3 in
+      4 back
       repeat
-
-    Assumptions:
-    - Motor 1 and 3 are hips
-    - Motor 2 and 4 are knees
-    - "out" for hips means +50 from home
-    - "forward" for knees means +50 from home
-
-    Change the signs below if one or more motors move the wrong direction.
     """
 
     required_ids = [1, 2, 3, 4]
@@ -572,15 +564,14 @@ def waddle(
 
     if not at_home:
         print("Warning: robot did not fully confirm home, but continuing cautiously.")
+        return False
 
-    # Base home positions
     h1 = HOME_POSITIONS[1]
     h2 = HOME_POSITIONS[2]
     h3 = HOME_POSITIONS[3]
     h4 = HOME_POSITIONS[4]
 
-    # Direction assumptions
-    # Change + to - if a motor moves the wrong way
+    # Change signs here if any motor moves the wrong direction
     m1_out = h1 + hip_offset
     m2_forward = h2 + knee_offset
     m3_out = h3 + hip_offset
@@ -588,10 +579,6 @@ def waddle(
 
     print("\nStarting waddle gait...")
     print(f"Cycles: {cycles}")
-    print(f"Motor 1 out target: {m1_out}")
-    print(f"Motor 2 forward target: {m2_forward}")
-    print(f"Motor 3 out target: {m3_out}")
-    print(f"Motor 4 forward target: {m4_forward}")
 
     for cycle in range(cycles):
         print(f"\nWaddle cycle {cycle + 1}/{cycles}")
@@ -607,8 +594,13 @@ def waddle(
         time.sleep(move_duration / 1000.0 + pause)
 
         # 1 in
-        print(f"Motor 1 in: -> {h1}")
+        print(f"Motor 1 in: {m1_out} -> {h1}")
         my_robot.move(1, h1, move_duration)
+        time.sleep(move_duration / 1000.0 + pause)
+
+        # 2 back
+        print(f"Motor 2 back: {m2_forward} -> {h2}")
+        my_robot.move(2, h2, move_duration)
         time.sleep(move_duration / 1000.0 + pause)
 
         # 3 out
@@ -622,16 +614,14 @@ def waddle(
         time.sleep(move_duration / 1000.0 + pause)
 
         # 3 in
-        print(f"Motor 3 in: -> {h3}")
+        print(f"Motor 3 in: {m3_out} -> {h3}")
         my_robot.move(3, h3, move_duration)
         time.sleep(move_duration / 1000.0 + pause)
 
-    print("\nReturning knees to home at end of waddle...")
-    my_robot.move(2, h2, move_duration)
-    time.sleep(move_duration / 1000.0 + pause)
-
-    my_robot.move(4, h4, move_duration)
-    time.sleep(move_duration / 1000.0 + pause)
+        # 4 back
+        print(f"Motor 4 back: {m4_forward} -> {h4}")
+        my_robot.move(4, h4, move_duration)
+        time.sleep(move_duration / 1000.0 + pause)
 
     print("\nVerifying final positions...")
     positions = read_servo_positions(monitor, [1, 2, 3, 4])

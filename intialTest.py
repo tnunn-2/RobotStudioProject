@@ -575,7 +575,7 @@ def waddle(
     m1_out = h1 - hip_offset
     m2_forward = h2 + knee_offset
     m3_out = h3 - hip_offset
-    m4_forward = h4 + knee_offset
+    m4_forward = h4 - knee_offset
 
     print("\nStarting waddle gait...")
     print(f"Cycles: {cycles}")
@@ -588,19 +588,24 @@ def waddle(
         print(f"\nWaddle cycle {cycle + 1}/{cycles}")
 
         # 1 out
-        print(f"Motor 1 out: {h1} -> {m1_out}")
-        my_robot.move(1, m1_out, move_duration)
-        time.sleep(move_duration / 1000.0 + pause)
+        # print(f"Motor 1 out: {h1} -> {m1_out}")
+        # my_robot.move(1, m1_out, move_duration)
+        # time.sleep(move_duration / 1000.0 + pause)
 
         # 2 forward
         print(f"Motor 2 forward: {h2} -> {m2_forward}")
         my_robot.move(2, m2_forward, move_duration)
         time.sleep(move_duration / 1000.0 + pause)
 
-        # 1 in
-        print(f"Motor 1 in: {m1_out} -> {h1}")
-        my_robot.move(1, h1, move_duration)
+        # 4 back
+        print(f"Motor 4 back: {m4_forward} -> {h4}")
+        my_robot.move(4, h4, move_duration)
         time.sleep(move_duration / 1000.0 + pause)
+
+        # 1 in
+        # print(f"Motor 1 in: {m1_out} -> {h1}")
+        # my_robot.move(1, h1, move_duration)
+        # time.sleep(move_duration / 1000.0 + pause)
 
         # 2 back
         print(f"Motor 2 back: {m2_forward} -> {h2}")
@@ -608,9 +613,9 @@ def waddle(
         time.sleep(move_duration / 1000.0 + pause)
 
         # 3 out
-        print(f"Motor 3 out: {h3} -> {m3_out}")
-        my_robot.move(3, m3_out, move_duration)
-        time.sleep(move_duration / 1000.0 + pause)
+        # print(f"Motor 3 out: {h3} -> {m3_out}")
+        # my_robot.move(3, m3_out, move_duration)
+        # time.sleep(move_duration / 1000.0 + pause)
 
         # 4 forward
         print(f"Motor 4 forward: {h4} -> {m4_forward}")
@@ -618,14 +623,11 @@ def waddle(
         time.sleep(move_duration / 1000.0 + pause)
 
         # 3 in
-        print(f"Motor 3 in: {m3_out} -> {h3}")
-        my_robot.move(3, h3, move_duration)
-        time.sleep(move_duration / 1000.0 + pause)
+        # print(f"Motor 3 in: {m3_out} -> {h3}")
+        # my_robot.move(3, h3, move_duration)
+        # time.sleep(move_duration / 1000.0 + pause)
 
-        # 4 back
-        print(f"Motor 4 back: {m4_forward} -> {h4}")
-        my_robot.move(4, h4, move_duration)
-        time.sleep(move_duration / 1000.0 + pause)
+        
 
     print("\nVerifying final positions...")
     positions = read_servo_positions(monitor, [1, 2, 3, 4])

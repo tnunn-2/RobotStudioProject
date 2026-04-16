@@ -11,10 +11,10 @@ PORT = '/dev/ttyUSB0'
 # PORT = 'COM9'
 
 HOME_POSITIONS = {
-    1: 641,  # left hip
-    2: 573,  # left knee
-    3: 794,  # right hip
-    4: 408   # right knee
+    1: 585,  # left hip
+    2: 539,  # left knee
+    3: 744,  # right hip
+    4: 457   # right knee
 }
 
 # LX-16A style assumption: ~240 deg over 1000 position units
@@ -525,7 +525,7 @@ def waddle(
     connected_ids,
     cycles=3,
     hip_offset=50,
-    knee_offset=25,
+    knee_offset=35,
     move_duration=800,
     pause=0.15,
     tolerance=TOLERANCE

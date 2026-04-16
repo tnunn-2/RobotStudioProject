@@ -526,7 +526,7 @@ def waddle(
     cycles=3,
     hip_offset=50,
     knee_offset=35,
-    move_duration=800,
+    move_duration=600,
     pause=0.15,
     tolerance=TOLERANCE
 ):
@@ -666,7 +666,7 @@ if __name__ == "__main__":
 
         elif command == "waddle":
             connected = get_connected_ids(my_robot)
-            waddle(my_robot, connected, cycles=5)
+            waddle(my_robot, connected, cycles=10)
 
         elif command == "full":
             bootUp(my_robot)

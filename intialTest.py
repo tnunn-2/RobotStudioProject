@@ -525,7 +525,7 @@ def waddle(
     connected_ids,
     cycles=3,
     hip_offset=50,
-    knee_offset=50,
+    knee_offset=25,
     move_duration=800,
     pause=0.15,
     tolerance=TOLERANCE
@@ -579,6 +579,10 @@ def waddle(
 
     print("\nStarting waddle gait...")
     print(f"Cycles: {cycles}")
+    # 4 forward
+    print(f"Start with Motor 4 forward: {h4} -> {m4_forward}")
+    my_robot.move(4, m4_forward, move_duration)
+    time.sleep(move_duration / 1000.0 + pause)
 
     for cycle in range(cycles):
         print(f"\nWaddle cycle {cycle + 1}/{cycles}")

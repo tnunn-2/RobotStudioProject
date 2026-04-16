@@ -14,7 +14,7 @@ HOME_POSITIONS = {
     1: 641,  # left hip
     2: 573,  # left knee
     3: 794,  # right hip
-    4: 430   # right knee
+    4: 408   # right knee
 }
 
 # LX-16A style assumption: ~240 deg over 1000 position units

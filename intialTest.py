@@ -11,10 +11,10 @@ PORT = '/dev/ttyUSB0'
 # PORT = 'COM9'
 
 HOME_POSITIONS = {
-    1: 917,  # left hip
-    2: 560,  # left knee
-    3: 729,  # right hip
-    4: 430   # right knee
+    1: 996,  # left hip
+    2: 571,  # left knee
+    3: 765,  # right hip
+    4: 434   # right knee
 }
 
 # LX-16A style assumption: ~240 deg over 1000 position units

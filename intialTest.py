@@ -641,7 +641,7 @@ def waddle(
     print("Waddle complete.")
     return True
 
-    def dance(
+def dance(
     my_robot,
     connected_ids,
     cycles=4,
@@ -657,8 +657,8 @@ def waddle(
     - Repeat slowly
 
     For each hip:
-      outside = home - hip_offset
-      inside  = home + hip_offset
+        outside = home - hip_offset
+        inside  = home + hip_offset
     Total sweep = 2 * hip_offset
     """
 

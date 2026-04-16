@@ -526,7 +526,7 @@ def waddle(
     cycles=3,
     hip_offset=50,
     knee_offset=50,
-    move_duration=1200,
+    move_duration=1000,
     pause=0.15,
     tolerance=TOLERANCE
 ):
@@ -575,7 +575,7 @@ def waddle(
     m1_out = h1 + hip_offset
     m2_forward = h2 + knee_offset
     m3_out = h3 + hip_offset
-    m4_forward = h4 + knee_offset
+    m4_forward = h4 - knee_offset
 
     print("\nStarting waddle gait...")
     print(f"Cycles: {cycles}")
